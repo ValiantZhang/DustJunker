@@ -165,7 +165,7 @@ var game = (() => {
 	    // build the skybox Mesh
     	spaceSkybox	= new THREE.Mesh( new THREE.CubeGeometry( 10000, 10000, 10000, 1, 1, 1, null, true ), skyboxMat );
     	// add it to the scene
-    	scene.addObject( spaceSkybox );
+    	scene.add( spaceSkybox );
         
         // Burnt Ground
         groundGeometry = new BoxGeometry(32, 1, 32);
