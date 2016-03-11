@@ -215,23 +215,23 @@ var game = (function () {
             if (isGrounded) {
                 if (keyboardControls.moveForward) {
                     console.log("moving forward");
-                    velocity.z -= 400.0 * delta;
+                    velocity.z -= 10.0 * delta;
                 }
                 if (keyboardControls.moveLeft) {
                     console.log("moving left");
-                    velocity.x -= 400.0 * delta;
+                    velocity.x -= 10.0 * delta;
                 }
                 if (keyboardControls.moveRight) {
                     console.log("moving right");
-                    velocity.x += 400.0 * delta;
+                    velocity.x += 10.0 * delta;
                 }
                 if (keyboardControls.moveBackward) {
                     console.log("moving back");
-                    velocity.z += 400.0 * delta;
+                    velocity.z += 10.0 * delta;
                 }
                 if (keyboardControls.jump) {
                     console.log("jumping");
-                    velocity.y += 2000.0 * delta;
+                    velocity.y += 10.0 * delta;
                     if (player.position.y > 4) {
                         isGrounded = false;
                     }
