@@ -122,15 +122,16 @@ var game = (function () {
             "../../Assets/Skybox/Space/negY.jpg",
             "../../Assets/Skybox/Space/posZ.jpg",
             "../../Assets/Skybox/Space/negZ.jpg"];
-        var skyboxCube = THREE.ImageLoader(skyboxCubePics);
+        var skyboxCube = THREE.ImageUtils.loadTextureCube(skyboxCubePics);
         // init the cube shadder
         var shader = THREE.ShaderLib["cube"];
-        var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
-        uniforms['tCube'].texture = skyboxCube;
-        var skyboxMat = new THREE.MeshShaderMaterial({
+        shader.uniforms['tCube'].value = skyboxCube;
+        var skyboxMat = new THREE.ShaderMaterial({
             fragmentShader: shader.fragmentShader,
             vertexShader: shader.vertexShader,
-            uniforms: uniforms
+            uniforms: shader.uniforms,
+            depthWrite: false,
+            side: THREE.BackSide
         });
         // build the skybox Mesh
         spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(10000, 10000, 10000, 1, 1, 1, null, true), skyboxMat);
