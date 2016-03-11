@@ -122,9 +122,9 @@ var game = (function () {
             "../../Assets/Skybox/Space/negY.jpg",
             "../../Assets/Skybox/Space/posZ.jpg",
             "../../Assets/Skybox/Space/negZ.jpg"];
-        var skyboxCube = THREE.ImageUtils.loadTextureCube(skyboxCubePics);
+        var skyboxCube = THREE.ImageUtils.CubeTextureLoader(skyboxCubePics);
         // init the cube shadder
-        var shader = THREE.ShaderUtils.lib["cube"];
+        var shader = THREE.ShaderLib["cube"];
         var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
         uniforms['tCube'].texture = skyboxCube;
         var skyboxMat = new THREE.MeshShaderMaterial({
@@ -133,7 +133,7 @@ var game = (function () {
             uniforms: uniforms
         });
         // build the skybox Mesh
-        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100000, 100000, 100000, 1, 1, 1, null, true), skyboxMat);
+        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(10000, 10000, 10000, 1, 1, 1, null, true), skyboxMat);
         // add it to the scene
         scene.addObject(spaceSkybox);
         // Burnt Ground
@@ -282,7 +282,7 @@ var game = (function () {
     }
     // Setup main camera for the scene
     function setupCamera() {
-        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
+        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 10000);
         camera.position.set(0, 10, 30);
         camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
