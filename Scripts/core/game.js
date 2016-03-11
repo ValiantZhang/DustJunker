@@ -134,7 +134,7 @@ var game = (function () {
             side: THREE.BackSide
         });
         // build the skybox Mesh
-        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(10000, 10000, 10000, 1, 1, 1, null, true), skyboxMat);
+        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100, 1, 1, 1, null, true), skyboxMat);
         // add it to the scene
         scene.add(spaceSkybox);
         // Burnt Ground
@@ -283,7 +283,7 @@ var game = (function () {
     }
     // Setup main camera for the scene
     function setupCamera() {
-        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 10000);
+        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
         camera.position.set(0, 10, 30);
         camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
