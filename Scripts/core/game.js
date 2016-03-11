@@ -122,7 +122,7 @@ var game = (function () {
             "../../Assets/Skybox/Space/negY.jpg",
             "../../Assets/Skybox/Space/posZ.jpg",
             "../../Assets/Skybox/Space/negZ.jpg"];
-        var skyboxCube = THREE.ImageUtils.CubeTextureLoader(skyboxCubePics);
+        var skyboxCube = THREE.ImageLoader(skyboxCubePics);
         // init the cube shadder
         var shader = THREE.ShaderLib["cube"];
         var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
