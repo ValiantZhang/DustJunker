@@ -165,7 +165,9 @@ var game = (function () {
     }
     //PointerLockChange Event Handler
     function pointerLockChange(event) {
-        if (document.pointerLockElement === element) {
+        if (document.pointerLockElement === element ||
+            document.mozPointerLockElement === element ||
+            document.webkitPointerLockElement === element) {
             // enable our mouse and keyboard controls
             keyboardControls.enabled = true;
             blocker.style.display = 'none';
