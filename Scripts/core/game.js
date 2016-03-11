@@ -59,6 +59,7 @@ var game = (function () {
     var isGrounded;
     var velocity = new Vector3(0, 0, 0);
     var prevTime = 0;
+    var spaceSkybox;
     function init() {
         // Create to HTMLElements
         blocker = document.getElementById("blocker");
@@ -83,6 +84,7 @@ var game = (function () {
             document.addEventListener('pointerlockerror', pointerLockError);
             document.addEventListener('mozpointerlockerror', pointerLockError);
             document.addEventListener('webkitpointerlockerror', pointerLockError);
+            document.addEventListener("mousemove", this.moveCallback, false);
         }
         // Scene changes for Physijs
         scene.name = "Main";
@@ -113,6 +115,27 @@ var game = (function () {
         spotLight.name = "Spot Light";
         scene.add(spotLight);
         console.log("Added spotLight to scene");
+        // load the cube textures
+        var skyboxCubePics = ["../../Assets/Skybox/Space/posX.jpg",
+            "../../Assets/Skybox/Space/negX.jpg",
+            "../../Assets/Skybox/Space/posY.jpg",
+            "../../Assets/Skybox/Space/negY.jpg",
+            "../../Assets/Skybox/Space/posZ.jpg",
+            "../../Assets/Skybox/Space/negZ.jpg"];
+        var skyboxCube = THREE.ImageUtils.loadTextureCube(skyboxCubePics);
+        // init the cube shadder
+        var shader = THREE.ShaderUtils.lib["cube"];
+        var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
+        uniforms['tCube'].texture = skyboxCube;
+        var skyboxMat = new THREE.MeshShaderMaterial({
+            fragmentShader: shader.fragmentShader,
+            vertexShader: shader.vertexShader,
+            uniforms: uniforms
+        });
+        // build the skybox Mesh
+        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100000, 100000, 100000, 1, 1, 1, null, true), skyboxMat);
+        // add it to the scene
+        scene.addObject(spaceSkybox);
         // Burnt Ground
         groundGeometry = new BoxGeometry(32, 1, 32);
         groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xe75d14 }), 0.4, 0);
@@ -170,11 +193,14 @@ var game = (function () {
             document.webkitPointerLockElement === element) {
             // enable our mouse and keyboard controls
             keyboardControls.enabled = true;
+            document.addEventListener("mousemove", this.moveCallback, false);
             blocker.style.display = 'none';
         }
         else {
             // disable our mouse and keyboard controls
             keyboardControls.enabled = false;
+            document.removeEventListener("mousemove", this.moveCallback, false);
+            this.unlockHook(this.element);
             blocker.style.display = '-webkit-box';
             blocker.style.display = '-moz-box';
             blocker.style.display = 'box';
@@ -211,27 +237,27 @@ var game = (function () {
         if (keyboardControls.enabled) {
             velocity = new Vector3();
             var time = performance.now();
-            var delta = (time.prevTime) / 1000;
+            var delta = (time.prevTime) / 5000;
             if (isGrounded) {
                 if (keyboardControls.moveForward) {
                     console.log("moving forward");
-                    velocity.z -= 10.0 * delta;
+                    velocity.z -= 400.0 * delta;
                 }
                 if (keyboardControls.moveLeft) {
                     console.log("moving left");
-                    velocity.x -= 10.0 * delta;
+                    velocity.x -= 400.0 * delta;
                 }
                 if (keyboardControls.moveRight) {
                     console.log("moving right");
-                    velocity.x += 10.0 * delta;
+                    velocity.x += 400.0 * delta;
                 }
                 if (keyboardControls.moveBackward) {
                     console.log("moving back");
-                    velocity.z += 10.0 * delta;
+                    velocity.z += 400.0 * delta;
                 }
                 if (keyboardControls.jump) {
                     console.log("jumping");
-                    velocity.y += 10.0 * delta;
+                    velocity.y += 2000.0 * delta;
                     if (player.position.y > 4) {
                         isGrounded = false;
                     }

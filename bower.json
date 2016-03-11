@@ -1,9 +1,9 @@
 {
-  "name": "comp392-lesson8",
+  "name": "Dust Junker",
   "authors": [
-    "Tom Tsiliopoulos <tsiliopoulos@hotmail.com>"
+    "Jacky Zhang"
   ],
-  "description": "COMP392 Lesson 8 for Advanced Graphics",
+  "description": "Assignment 3 for COMP392",
   "main": "",
   "moduleType": [],
   "license": "MIT",
