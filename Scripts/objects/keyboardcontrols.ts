@@ -8,81 +8,61 @@ module objects {
         public moveRight: boolean;
         public jump: boolean;
         public enabled: boolean;
-    
         // CONSTRUCTOR ++++++++++++++++++++++++++    
         constructor() {
-            document.addEventListener('keydown', this.onKeyDown.bind(this));
-            document.addEventListener('keyup', this.onKeyUp.bind(this), false);
-        }
-        
-        //PUBLIC METHODS
-        
-        /*public enabled(): void {
+            this.enabled = false;
             document.addEventListener('keydown', this.onKeyDown.bind(this), false);
             document.addEventListener('keyup', this.onKeyUp.bind(this), false);
-            console.log("keyboard controls enabled");
         }
+
+        // PUBLIC METHODS
         
-        public disabled(): void {
-            document.removeEventListener('keydown', this.onKeyDown.bind(this));
-            document.removeEventListener('keyup', this.onKeyUp.bind(this));
-            console.log("keyboard controls disabled");
-        }*/
-        
-        public onKeyDown(event.KeyboardEvent): void{
-            switch(event.keyCode){
-                case 38: /*up arrorw*/
-                case 87: /*W Key*/
+        public onKeyDown(event: KeyboardEvent): void {
+            switch (event.keyCode) {
+                case 38: /*up arrow*/
+                case 87: /* W Key */
                     this.moveForward = true;
                     break;
-                    
-                case 37: /*left arrorw*/
-                case 65: /*A Key*/
+                case 37: /*left arrow*/
+                case 65: /* A Key */
                     this.moveLeft = true;
                     break;
-                    
-                case 40: /*down arrorw*/
-                case 83: /*S Key*/
+                case 40: /*down arrow*/
+                case 83: /* S Key */
                     this.moveBackward = true;
                     break;
-                    
-                case 39: /*right arrorw*/
-                case 68: /*D Key*/
+                case 39: /*right arrow*/
+                case 68: /* D Key */
                     this.moveRight = true;
                     break;
-                    
-                case 32: /*space*/
+                case 32: /* Spacebar */
                     this.jump = true;
                     break;
             }
         }
-        
-        public onKeyUp(event.KeyboardEvent): void{
-            switch(event.keyCode){
-                case 38: /*up arrorw*/
-                case 87: /*W Key*/
+
+        public onKeyUp(event: KeyboardEvent): void {
+            switch (event.keyCode) {
+                case 38: /*up arrow*/
+                case 87: /* W Key */
                     this.moveForward = false;
                     break;
-                    
-                case 37: /*left arrorw*/
-                case 65: /*A Key*/
+                case 37: /*left arrow*/
+                case 65: /* A Key */
                     this.moveLeft = false;
                     break;
-                    
-                case 40: /*down arrorw*/
-                case 83: /*S Key*/
+                case 40: /*down arrow*/
+                case 83: /* S Key */
                     this.moveBackward = false;
                     break;
-                    
-                case 39: /*right arrorw*/
-                case 68: /*D Key*/
+                case 39: /*right arrow*/
+                case 68: /* D Key */
                     this.moveRight = false;
                     break;
-                    
-                case 32: /*space*/
+                case 32: /* Spacebar */
                     this.jump = false;
                     break;
-            }   
+            }
         }
     }
 }

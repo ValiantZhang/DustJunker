@@ -8,11 +8,15 @@ var BoxGeometry = THREE.BoxGeometry;
 var CubeGeometry = THREE.CubeGeometry;
 var PlaneGeometry = THREE.PlaneGeometry;
 var SphereGeometry = THREE.SphereGeometry;
+var CylinderGeometry = THREE.CylinderGeometry;
 var Geometry = THREE.Geometry;
 var AxisHelper = THREE.AxisHelper;
 var LambertMaterial = THREE.MeshLambertMaterial;
 var MeshBasicMaterial = THREE.MeshBasicMaterial;
+var LineBasicMaterial = THREE.LineBasicMaterial;
+var PhongMaterial = THREE.MeshPhongMaterial;
 var Material = THREE.Material;
+var Line = THREE.Line;
 var Mesh = THREE.Mesh;
 var Object3D = THREE.Object3D;
 var SpotLight = THREE.SpotLight;
@@ -45,9 +49,15 @@ var game = (function () {
     var blocker;
     var instructions;
     var spotLight;
-    var groundGeometry;
-    var groundMaterial;
-    var ground;
+    var shipGeometry;
+    var shipPhysicsMaterial;
+    var shipMaterial;
+    var ship;
+    var shipTexture;
+    var shipTextureNormal;
+    /*var shipGeometry: CylinderGeometry;
+    var shipMaterial: Physijs.Material;
+    var ship: Physijs.Mesh;*/
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -56,9 +66,13 @@ var game = (function () {
     var sphereMaterial;
     var sphere;
     var keyboardControls;
+    var mouseControls;
     var isGrounded;
     var velocity = new Vector3(0, 0, 0);
     var prevTime = 0;
+    var directionLineMaterial;
+    var directionLineGeometry;
+    var directionLine;
     var spaceSkybox;
     function init() {
         // Create to HTMLElements
@@ -68,6 +82,9 @@ var game = (function () {
         havePointerLock = 'pointerLockElement' in document ||
             'mozPointerLockElement' in document ||
             'webkitPointerLockElement' in document;
+        // Instantiate Game Controls
+        keyboardControls = new objects.KeyboardControls();
+        mouseControls = new objects.MouseControls();
         if (havePointerLock) {
             element = document.body;
             instructions.addEventListener('click', function () {
@@ -84,7 +101,6 @@ var game = (function () {
             document.addEventListener('pointerlockerror', pointerLockError);
             document.addEventListener('mozpointerlockerror', pointerLockError);
             document.addEventListener('webkitpointerlockerror', pointerLockError);
-            document.addEventListener("mousemove", this.moveCallback, false);
         }
         // Scene changes for Physijs
         scene.name = "Main";
@@ -137,19 +153,40 @@ var game = (function () {
         spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100, 1, 1, 1, null, true), skyboxMat);
         // add it to the scene
         scene.add(spaceSkybox);
-        // Burnt Ground
-        groundGeometry = new BoxGeometry(32, 1, 32);
-        groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xe75d14 }), 0.4, 0);
-        ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
-        ground.receiveShadow = true;
-        ground.name = "Ground";
-        scene.add(ground);
+        // Ground object
+        shipTexture = new THREE.TextureLoader().load('../../Assets/images/GravelCobble.jpg');
+        shipTexture.wrapS = THREE.RepeatWrapping;
+        shipTexture.wrapT = THREE.RepeatWrapping;
+        shipTexture.repeat.set(4, 4);
+        shipTextureNormal = new THREE.TextureLoader().load('../../Assets/images/GravelCobbleNormal.png');
+        shipTextureNormal.wrapS = THREE.RepeatWrapping;
+        shipTextureNormal.wrapT = THREE.RepeatWrapping;
+        shipTextureNormal.repeat.set(4, 4);
+        shipMaterial = new PhongMaterial();
+        shipMaterial.map = shipTexture;
+        shipMaterial.bumpMap = shipTextureNormal;
+        shipMaterial.bumpScale = 0.2;
+        shipGeometry = new CylinderGeometry(6.5, 7, 20, 32);
+        shipPhysicsMaterial = Physijs.createMaterial(shipMaterial, 0, 0);
+        ship = new Physijs.CylinderMesh(shipGeometry, shipMaterial, 0);
+        ship.rotation.z = 90;
+        ship.receiveShadow = true;
+        ship.name = "SpaceShip";
+        scene.add(ship);
         console.log("Added Burnt Ground to scene");
+        /*//Space Ship
+        shipGeometry = new CylinderGeometry(6.5, 7, 20, 32);
+        shipMaterial = Physijs.createMaterial(new LambertMaterial({color: 0xffffff}), 0.4, 0);
+        ship = new Physijs.CylinderMesh(shipGeometry, shipMaterial, 0);
+        ship.rotation.z = 90;
+        ship.receiveShadow = true;
+        ship.name = "SpaceShip";
+        scene.add(ship);*/
         // Player Object
-        playerGeometry = new BoxGeometry(2, 2, 2, 2, 2);
+        playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
-        player.position.set(0, 30, 10);
+        player.position.set(0, 30, 0);
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
@@ -164,6 +201,17 @@ var game = (function () {
                 console.log("player hit the sphere");
             }
         });
+        // Add DirectionLine
+        directionLineMaterial = new LineBasicMaterial({ color: 0xffff00 });
+        directionLineGeometry = new Geometry();
+        directionLineGeometry.vertices.push(new Vector3(0, 0, 0)); // line origin
+        directionLineGeometry.vertices.push(new Vector3(0, 0, -50)); // end of the line
+        directionLine = new Line(directionLineGeometry, directionLineMaterial);
+        player.add(directionLine);
+        console.log("Added DirectionLine to the Player");
+        //create parent child relationship with camera and player
+        /*player.add(camera);
+        camera.position.set(0, 1, 0);*/
         //Sphere Object
         sphereGeometry = new SphereGeometry(2);
         sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
@@ -174,7 +222,6 @@ var game = (function () {
         sphere.name = "Sphere";
         scene.add(sphere);
         console.log("Adding Sphere to Scene");
-        keyboardControls = new objects.KeyboardControls();
         // add controls
         gui = new GUI();
         control = new Control();
@@ -194,14 +241,13 @@ var game = (function () {
             document.webkitPointerLockElement === element) {
             // enable our mouse and keyboard controls
             keyboardControls.enabled = true;
-            document.addEventListener("mousemove", this.moveCallback, false);
+            mouseControls.enabled = true;
             blocker.style.display = 'none';
         }
         else {
             // disable our mouse and keyboard controls
             keyboardControls.enabled = false;
-            document.removeEventListener("mousemove", this.moveCallback, false);
-            this.unlockHook(this.element);
+            mouseControls.enabled = false;
             blocker.style.display = '-webkit-box';
             blocker.style.display = '-moz-box';
             blocker.style.display = 'box';
@@ -235,42 +281,62 @@ var game = (function () {
     // Setup main game loop
     function gameLoop() {
         stats.update();
-        if (keyboardControls.enabled) {
-            velocity = new Vector3();
-            var time = performance.now();
-            var delta = (time.prevTime) / 5000;
-            if (isGrounded) {
-                if (keyboardControls.moveForward) {
-                    console.log("moving forward");
-                    velocity.z -= 400.0 * delta;
-                }
-                if (keyboardControls.moveLeft) {
-                    console.log("moving left");
-                    velocity.x -= 400.0 * delta;
-                }
-                if (keyboardControls.moveRight) {
-                    console.log("moving right");
-                    velocity.x += 400.0 * delta;
-                }
-                if (keyboardControls.moveBackward) {
-                    console.log("moving back");
-                    velocity.z += 400.0 * delta;
-                }
-                if (keyboardControls.jump) {
-                    console.log("jumping");
-                    velocity.y += 2000.0 * delta;
-                    if (player.position.y > 4) {
-                        isGrounded = false;
-                    }
-                }
-            }
-        }
-        player.applyCentralForce(velocity);
-        prevTime = time;
+        checkControls();
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
         renderer.render(scene, camera);
+    }
+    function checkControls() {
+        velocity = new Vector3();
+        if (keyboardControls.enabled) {
+            var time = performance.now();
+            var delta = (time - prevTime) / 1000;
+            var direction = new Vector3(0, 0, 0);
+            if (keyboardControls.moveForward) {
+                console.log("Moving Forward");
+                velocity.z -= 400.0 * delta;
+            }
+            if (keyboardControls.moveLeft) {
+                console.log("Moving left");
+                velocity.x -= 400.0 * delta;
+            }
+            if (keyboardControls.moveBackward) {
+                console.log("Moving Backward");
+                velocity.z += 400.0 * delta;
+            }
+            if (keyboardControls.moveRight) {
+                console.log("Moving Right");
+                velocity.x += 400.0 * delta;
+            }
+            if (keyboardControls.jump) {
+                console.log("Jumping");
+                velocity.y += 4000.0 * delta;
+                if (player.position.y > 4) {
+                    isGrounded = false;
+                }
+            }
+            player.setDamping(0.7, 0.1);
+            // Changing player's rotation
+            player.setAngularVelocity(new Vector3(0, -mouseControls.yaw, 0));
+            direction.addVectors(direction, velocity);
+            direction.applyQuaternion(player.quaternion);
+            if (Math.abs(player.getLinearVelocity().x) < 20 && Math.abs(player.getLinearVelocity().y) < 10) {
+                player.applyCentralForce(direction);
+            }
+            cameraLook();
+            prevTime = time;
+        } // Controls Enabled ends
+        else {
+            player.setAngularVelocity(new Vector3(0, 0, 0));
+        }
+    }
+    function cameraLook() {
+        var zenith = THREE.Math.degToRad(90);
+        var nadir = THREE.Math.degToRad(-90);
+        var cameraPitch = camera.rotation.x + mouseControls.pitch;
+        //Constrain the Cmaera Pitch
+        camera.rotation.x = THREE.Math.clamp(cameraPitch, nadir, zenith);
     }
     // Setup default renderer
     function setupRenderer() {
@@ -284,8 +350,8 @@ var game = (function () {
     // Setup main camera for the scene
     function setupCamera() {
         camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
-        camera.position.set(0, 10, 30);
-        camera.lookAt(new Vector3(0, 0, 0));
+        //camera.position.set(0, 10, 30);
+        //camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
     }
     window.onload = init;
