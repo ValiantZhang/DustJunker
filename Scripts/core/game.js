@@ -55,9 +55,12 @@ var game = (function () {
     var ship;
     var shipTexture;
     var shipTextureNormal;
-    /*var shipGeometry: CylinderGeometry;
-    var shipMaterial: Physijs.Material;
-    var ship: Physijs.Mesh;*/
+    var asteroidGeometry;
+    var asteroidPhysicsMaterial;
+    var asteroidMaterial;
+    var asteroid;
+    var asteroidTexture;
+    var asteroidTextureNormal;
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -105,7 +108,7 @@ var game = (function () {
         // Scene changes for Physijs
         scene.name = "Main";
         scene.fog = new THREE.Fog(0xffffff, 0, 750);
-        scene.setGravity(new THREE.Vector3(0, -30, 0));
+        scene.setGravity(new THREE.Vector3(0, -10, 0));
         scene.addEventListener('update', function () {
             scene.simulate(undefined, 2);
         });
@@ -150,15 +153,15 @@ var game = (function () {
             side: THREE.BackSide
         });
         // build the skybox Mesh
-        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100, 1, 1, 1, null, true), skyboxMat);
+        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100, null, true), skyboxMat);
         // add it to the scene
         scene.add(spaceSkybox);
-        // Ground object
-        shipTexture = new THREE.TextureLoader().load('../../Assets/images/GravelCobble.jpg');
+        // Spaceship object
+        shipTexture = new THREE.TextureLoader().load('../../Assets/images/shipHull.jpg');
         shipTexture.wrapS = THREE.RepeatWrapping;
         shipTexture.wrapT = THREE.RepeatWrapping;
         shipTexture.repeat.set(4, 4);
-        shipTextureNormal = new THREE.TextureLoader().load('../../Assets/images/GravelCobbleNormal.png');
+        shipTextureNormal = new THREE.TextureLoader().load('../../Assets/images/shipHullNormal.png');
         shipTextureNormal.wrapS = THREE.RepeatWrapping;
         shipTextureNormal.wrapT = THREE.RepeatWrapping;
         shipTextureNormal.repeat.set(4, 4);
@@ -166,34 +169,89 @@ var game = (function () {
         shipMaterial.map = shipTexture;
         shipMaterial.bumpMap = shipTextureNormal;
         shipMaterial.bumpScale = 0.2;
-        shipGeometry = new CylinderGeometry(6.5, 7, 20, 32);
-        shipPhysicsMaterial = Physijs.createMaterial(shipMaterial, 0, 0);
+        shipGeometry = new CylinderGeometry(8, 10, 30, 10);
+        shipPhysicsMaterial = Physijs.createMaterial(shipMaterial, 1, 0);
         ship = new Physijs.CylinderMesh(shipGeometry, shipMaterial, 0);
-        ship.rotation.z = 90;
+        ship.position.set(0, -10, 0);
+        ship.rotation.x = 5;
+        ship.rotation.z = -55;
         ship.receiveShadow = true;
         ship.name = "SpaceShip";
         scene.add(ship);
-        console.log("Added Burnt Ground to scene");
-        /*//Space Ship
-        shipGeometry = new CylinderGeometry(6.5, 7, 20, 32);
-        shipMaterial = Physijs.createMaterial(new LambertMaterial({color: 0xffffff}), 0.4, 0);
-        ship = new Physijs.CylinderMesh(shipGeometry, shipMaterial, 0);
-        ship.rotation.z = 90;
-        ship.receiveShadow = true;
-        ship.name = "SpaceShip";
-        scene.add(ship);*/
+        console.log("Added Spaceship to scene");
+        //Asteroid object
+        asteroidTexture = new THREE.TextureLoader().load('../../Assets/images/asteroid.jpg');
+        asteroidTexture.wrapS = THREE.RepeatWrapping;
+        asteroidTexture.wrapT = THREE.RepeatWrapping;
+        asteroidTexture.repeat.set(1, 1);
+        asteroidTextureNormal = new THREE.TextureLoader().load('../../Assets/images/asteroidMapNormal.png');
+        asteroidTextureNormal.wrapS = THREE.RepeatWrapping;
+        asteroidTextureNormal.wrapT = THREE.RepeatWrapping;
+        asteroidTextureNormal.repeat.set(1, 1);
+        asteroidMaterial = new PhongMaterial();
+        asteroidMaterial.map = asteroidTexture;
+        asteroidMaterial.bumpMap = asteroidTextureNormal;
+        asteroidMaterial.bumpScale = 0.2;
+        asteroidGeometry = new SphereGeometry(5, 10, 6);
+        asteroidPhysicsMaterial = Physijs.createMaterial(asteroidMaterial, 1, 0);
+        asteroid = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid.position.set(0, -10, -15);
+        asteroid.rotation.z += 50;
+        asteroid.receiveShadow = true;
+        asteroid.name = "Asteroid";
+        scene.add(asteroid);
+        //clone doesn't save gravity? wut?
+        //Duping asteroids 
+        var asteroid1 = asteroid.clone();
+        asteroid1 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid1.position.set(0, -5, -25);
+        asteroid1.scale.set(0.5, 0.5, 0.5);
+        scene.add(asteroid1);
+        var asteroid2 = asteroid.clone();
+        asteroid2 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid2.scale.set(0.7, 0.5, 0.7);
+        asteroid2.rotation.z -= 50;
+        asteroid2.position.set(10, 0, -25);
+        scene.add(asteroid2);
+        var asteroid3 = asteroid.clone();
+        asteroid3 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid3.scale.set(0.4, 0.3, 0.5);
+        asteroid3.rotation.z -= 20;
+        asteroid3.position.set(-30, 0, -30);
+        scene.add(asteroid3);
+        var asteroid4 = asteroid.clone();
+        asteroid4 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid4.scale.set(0.4, 0.3, 0.5);
+        asteroid4.rotation.z -= 20;
+        asteroid4.position.set(-30, 0, -30);
+        scene.add(asteroid4);
+        var asteroid5 = asteroid.clone();
+        asteroid5 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid5.position.set(-20, -10, -15);
+        asteroid5.scale.set(0.5, 0.4, 0.5);
+        scene.add(asteroid5);
+        var asteroid6 = asteroid.clone();
+        asteroid6 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid6.position.set(-10, -10, -40);
+        asteroid6.scale.set(0.5, 0.4, 0.5);
+        scene.add(asteroid6);
+        var asteroid7 = asteroid.clone();
+        asteroid7 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
+        asteroid7.position.set(30, -10, -30);
+        asteroid7.scale.set(0.4, 0.3, 0.4);
+        scene.add(asteroid7);
         // Player Object
         playerGeometry = new BoxGeometry(2, 4, 2);
-        playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
+        playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.8, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
-        player.position.set(0, 30, 0);
+        player.position.set(0, 1, 0);
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
         scene.add(player);
         console.log("Added Player to Scene");
         player.addEventListener('collision', function (event) {
-            if (event.name === "Ground") {
+            if (event.name === "SpaceShip" || event.name === "Asteroid") {
                 console.log("player hit the ground");
                 isGrounded = true;
             }
@@ -210,18 +268,18 @@ var game = (function () {
         player.add(directionLine);
         console.log("Added DirectionLine to the Player");
         //create parent child relationship with camera and player
-        /*player.add(camera);
-        camera.position.set(0, 1, 0);*/
-        //Sphere Object
-        sphereGeometry = new SphereGeometry(2);
-        sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
-        sphere = new Physijs.SphereMesh(sphereGeometry, sphereMaterial, 1);
-        sphere.position.set(0, 60, 0);
-        sphere.receiveShadow = true;
-        sphere.castShadow = true;
-        sphere.name = "Sphere";
-        scene.add(sphere);
-        console.log("Adding Sphere to Scene");
+        player.add(camera);
+        camera.position.set(0, 1, 0);
+        /*        //Sphere Object
+                sphereGeometry = new SphereGeometry(2);
+                sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
+                sphere = new Physijs.SphereMesh(sphereGeometry, sphereMaterial, 1);
+                sphere.position.set(0, 60, 0);
+                sphere.receiveShadow = true;
+                sphere.castShadow = true;
+                sphere.name = "Sphere";
+                scene.add(sphere);
+                console.log("Adding Sphere to Scene");*/
         // add controls
         gui = new GUI();
         control = new Control();
@@ -243,6 +301,7 @@ var game = (function () {
             keyboardControls.enabled = true;
             mouseControls.enabled = true;
             blocker.style.display = 'none';
+            console.log("PointerLock enabled");
         }
         else {
             // disable our mouse and keyboard controls
@@ -282,6 +341,9 @@ var game = (function () {
     function gameLoop() {
         stats.update();
         checkControls();
+        spaceSkybox.rotation.x += 0.005;
+        spaceSkybox.rotation.y += 0.005;
+        spaceSkybox.rotation.z -= 0.008;
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
@@ -295,25 +357,27 @@ var game = (function () {
             var direction = new Vector3(0, 0, 0);
             if (keyboardControls.moveForward) {
                 console.log("Moving Forward");
-                velocity.z -= 400.0 * delta;
+                velocity.z -= 2000.0 * delta;
             }
             if (keyboardControls.moveLeft) {
                 console.log("Moving left");
-                velocity.x -= 400.0 * delta;
+                velocity.x -= 2000.0 * delta;
             }
             if (keyboardControls.moveBackward) {
                 console.log("Moving Backward");
-                velocity.z += 400.0 * delta;
+                velocity.z += 2000.0 * delta;
             }
             if (keyboardControls.moveRight) {
                 console.log("Moving Right");
-                velocity.x += 400.0 * delta;
+                velocity.x += 2000.0 * delta;
             }
-            if (keyboardControls.jump) {
-                console.log("Jumping");
-                velocity.y += 4000.0 * delta;
-                if (player.position.y > 4) {
-                    isGrounded = false;
+            if (isGrounded) {
+                if (keyboardControls.jump) {
+                    console.log("Jumping");
+                    velocity.y += 4000.0 * delta;
+                    if (player.position.y > 5) {
+                        isGrounded = false;
+                    }
                 }
             }
             player.setDamping(0.7, 0.1);
@@ -350,8 +414,8 @@ var game = (function () {
     // Setup main camera for the scene
     function setupCamera() {
         camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
-        //camera.position.set(0, 10, 30);
-        //camera.lookAt(new Vector3(0, 0, 0));
+        camera.position.set(0, 10, 30);
+        camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
     }
     window.onload = init;

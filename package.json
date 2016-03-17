@@ -1,5 +1,5 @@
 {
-  "name": "Dust Junker",
+  "name": "Dust-Junker",
   "version": "1.0.0",
   "description": "Assignment 3 for COMP392",
   "main": "game.js",
@@ -20,7 +20,7 @@
     "type": "git",
     "url": "https://github.com/ValiantZhang/DustJunker.git"
   },
-  "author": "Tom Tsiliopoulos",
+  "author": "Jacky ZHang",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ValiantZhang/DustJunker/issues"
