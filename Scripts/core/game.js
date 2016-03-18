@@ -48,13 +48,29 @@ var game = (function () {
     var stats;
     var blocker;
     var instructions;
+    var outputScore;
+    var gameOver;
     var spotLight;
+    var groundGeometry;
+    var groundPhysicsMaterial;
+    var groundMaterial;
+    var ground;
     var shipGeometry;
     var shipPhysicsMaterial;
     var shipMaterial;
     var ship;
     var shipTexture;
     var shipTextureNormal;
+    var sphere;
+    var sunMaterial;
+    var sunAtmoMaterial;
+    var sunTexture;
+    var starDustGeometry;
+    var starDustPhysicsMaterial;
+    var starDustMaterial;
+    var starDust;
+    var starDustTexture;
+    var starDustTextureNormal;
     var asteroidGeometry;
     var asteroidPhysicsMaterial;
     var asteroidMaterial;
@@ -77,10 +93,14 @@ var game = (function () {
     var directionLineGeometry;
     var directionLine;
     var spaceSkybox;
+    var score = 0;
     function init() {
         // Create to HTMLElements
         blocker = document.getElementById("blocker");
         instructions = document.getElementById("instructions");
+        gameOver = document.getElementById("gameOver");
+        outputScore = document.getElementById("score");
+        gameOver.style.display = 'none';
         //check to see if pointerlock is supported
         havePointerLock = 'pointerLockElement' in document ||
             'mozPointerLockElement' in document ||
@@ -107,7 +127,7 @@ var game = (function () {
         }
         // Scene changes for Physijs
         scene.name = "Main";
-        scene.fog = new THREE.Fog(0xffffff, 0, 750);
+        scene.fog = new THREE.Fog(0xffe6ff, 0, 750);
         scene.setGravity(new THREE.Vector3(0, -10, 0));
         scene.addEventListener('update', function () {
             scene.simulate(undefined, 2);
@@ -118,9 +138,9 @@ var game = (function () {
         setupCamera(); // setup the camera
         // Spot Light
         spotLight = new SpotLight(0xffffff);
-        spotLight.position.set(20, 40, -15);
+        spotLight.position.set(-50, 50, 50);
         spotLight.castShadow = true;
-        spotLight.intensity = 2;
+        spotLight.intensity = 1;
         spotLight.lookAt(new Vector3(0, 0, 0));
         spotLight.shadowCameraNear = 2;
         spotLight.shadowCameraFar = 200;
@@ -134,6 +154,16 @@ var game = (function () {
         spotLight.name = "Spot Light";
         scene.add(spotLight);
         console.log("Added spotLight to scene");
+        //DEATH GROUND
+        groundGeometry = new BoxGeometry(100000, 1, 100000);
+        groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xffffff }), 0.4, 0);
+        groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
+        ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
+        ground.position.set(0, -150, 0);
+        ground.receiveShadow = false;
+        ground.visible = false;
+        ground.name = "Ground";
+        scene.add(ground);
         // load the cube textures
         var skyboxCubePics = ["../../Assets/Skybox/Space/posX.jpg",
             "../../Assets/Skybox/Space/negX.jpg",
@@ -153,7 +183,7 @@ var game = (function () {
             side: THREE.BackSide
         });
         // build the skybox Mesh
-        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100, null, true), skyboxMat);
+        spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100000, 100000, 100000, null, true), skyboxMat);
         // add it to the scene
         scene.add(spaceSkybox);
         // Spaceship object
@@ -179,6 +209,51 @@ var game = (function () {
         ship.name = "SpaceShip";
         scene.add(ship);
         console.log("Added Spaceship to scene");
+        //Add a Sphere (sun)
+        sun = new SphereGeometry(30, 50, 50);
+        sunMaterial = new LambertMaterial({ color: 0xff4dff, emissive: 0xffccff });
+        sun = new Mesh(sun, sunMaterial);
+        sun.castShadow = true;
+        sun.position.set(-80, 70, 150);
+        //Add Outer Gas to Sun
+        /*        atmo = new SphereGeometry(5, 50, 50);
+                sunTexture = new THREE.TextureLoader().load( "../../Assets/images/shipHull.jpg" );
+                sunTexture.wrapS = THREE.RepeatWrapping;
+                sunTexture.wrapT = THREE.RepeatWrapping;
+                sunTexture.repeat.set(4,4);
+                sunAtmo = new LambertMaterial();
+                sunAtmo.transparent = true;
+                sunAtmo.opacity = 0.2;
+                sunAtmo.map = sunTexture;
+                sunAtmo = new Mesh(atmo, sunAtmoMaterial);
+                scene.add(sunAtmo);*/
+        //Add Light to the Sun
+        pointLight = new PointLight(0xffccff, 2, 200);
+        pointLight.position.set(0, 0, 0);
+        pointLight.castShadow = true;
+        sun.add(pointLight);
+        scene.add(sun);
+        //StarDust object
+        starDustTexture = new THREE.TextureLoader().load('../../Assets/images/gas.jpg');
+        starDustTexture.wrapS = THREE.RepeatWrapping;
+        starDustTexture.wrapT = THREE.RepeatWrapping;
+        starDustTexture.repeat.set(1, 1);
+        starDustTextureNormal = new THREE.TextureLoader().load('../../Assets/images/gasNormalMap.png');
+        starDustTextureNormal.wrapS = THREE.RepeatWrapping;
+        starDustTextureNormal.wrapT = THREE.RepeatWrapping;
+        starDustTextureNormal.repeat.set(1, 1);
+        starDustMaterial = new PhongMaterial();
+        starDustMaterial.map = starDustTexture;
+        starDustMaterial.bumpMap = starDustTextureNormal;
+        starDustMaterial.bumpScale = 0.2;
+        starDustGeometry = new SphereGeometry(1, 3, 3);
+        starDustPhysicsMaterial = Physijs.createMaterial(starDustMaterial, 1, 0);
+        starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
+        starDust.position.set(10, 5, -25);
+        starDust.receiveShadow = true;
+        starDust.name = "StarDust";
+        scene.add(starDust);
+        console.log("Added StarDust to scene");
         //Asteroid object
         asteroidTexture = new THREE.TextureLoader().load('../../Assets/images/asteroid.jpg');
         asteroidTexture.wrapS = THREE.RepeatWrapping;
@@ -200,7 +275,7 @@ var game = (function () {
         asteroid.receiveShadow = true;
         asteroid.name = "Asteroid";
         scene.add(asteroid);
-        //clone doesn't save gravity? wut?
+        //clone doesn't retain propeties? wut?
         //Duping asteroids 
         var asteroid1 = asteroid.clone();
         asteroid1 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
@@ -212,39 +287,46 @@ var game = (function () {
         asteroid2.scale.set(0.7, 0.5, 0.7);
         asteroid2.rotation.z -= 50;
         asteroid2.position.set(10, 0, -25);
+        asteroid2.name = "Asteroid";
         scene.add(asteroid2);
         var asteroid3 = asteroid.clone();
         asteroid3 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid3.scale.set(0.4, 0.3, 0.5);
         asteroid3.rotation.z -= 20;
         asteroid3.position.set(-30, 0, -30);
+        asteroid3.name = "Asteroid";
         scene.add(asteroid3);
         var asteroid4 = asteroid.clone();
         asteroid4 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid4.scale.set(0.4, 0.3, 0.5);
         asteroid4.rotation.z -= 20;
         asteroid4.position.set(-30, 0, -30);
+        asteroid4.name = "Asteroid";
         scene.add(asteroid4);
         var asteroid5 = asteroid.clone();
         asteroid5 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid5.position.set(-20, -10, -15);
         asteroid5.scale.set(0.5, 0.4, 0.5);
+        asteroid5.name = "Asteroid";
         scene.add(asteroid5);
         var asteroid6 = asteroid.clone();
         asteroid6 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid6.position.set(-10, -10, -40);
         asteroid6.scale.set(0.5, 0.4, 0.5);
+        asteroid6.name = "Asteroid";
         scene.add(asteroid6);
         var asteroid7 = asteroid.clone();
         asteroid7 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid7.position.set(30, -10, -30);
         asteroid7.scale.set(0.4, 0.3, 0.4);
+        asteroid7.name = "Asteroid";
         scene.add(asteroid7);
         // Player Object
         playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.8, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
-        player.position.set(0, 1, 0);
+        player.position.set(2, 1, 0);
+        player.rotation.y += 7;
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
@@ -252,21 +334,33 @@ var game = (function () {
         console.log("Added Player to Scene");
         player.addEventListener('collision', function (event) {
             if (event.name === "SpaceShip" || event.name === "Asteroid") {
-                console.log("player hit the ground");
+                console.log("player hit the ship/asteroid");
                 isGrounded = true;
+            }
+            if (event.name === "StarDust") {
+                scene.remove(starDust);
+                score += 1;
+                console.log("player collected points" + score);
+            }
+            if (event.name === "Ground") {
+                console.log("Game Over");
+                outputScore.innerHTML = score;
+                keyboardControls.enabled = false;
+                mouseControls.enabled = false;
+                gameOver.style.display = '';
             }
             if (event.name === "Sphere") {
                 console.log("player hit the sphere");
             }
         });
         // Add DirectionLine
-        directionLineMaterial = new LineBasicMaterial({ color: 0xffff00 });
-        directionLineGeometry = new Geometry();
-        directionLineGeometry.vertices.push(new Vector3(0, 0, 0)); // line origin
-        directionLineGeometry.vertices.push(new Vector3(0, 0, -50)); // end of the line
-        directionLine = new Line(directionLineGeometry, directionLineMaterial);
-        player.add(directionLine);
-        console.log("Added DirectionLine to the Player");
+        /*        directionLineMaterial = new LineBasicMaterial({ color: 0xffff00 });
+                directionLineGeometry = new Geometry();
+                directionLineGeometry.vertices.push(new Vector3(0, 0, 0)); // line origin
+                directionLineGeometry.vertices.push(new Vector3(0, 0, -50)); // end of the line
+                directionLine = new Line(directionLineGeometry, directionLineMaterial);
+                player.add(directionLine);
+                console.log("Added DirectionLine to the Player");*/
         //create parent child relationship with camera and player
         player.add(camera);
         camera.position.set(0, 1, 0);
@@ -311,6 +405,7 @@ var game = (function () {
             blocker.style.display = '-moz-box';
             blocker.style.display = 'box';
             instructions.style.display = '';
+            gameOver.style.display = 'none';
             console.log("PointerLock disabled");
         }
     }
@@ -341,9 +436,10 @@ var game = (function () {
     function gameLoop() {
         stats.update();
         checkControls();
-        spaceSkybox.rotation.x += 0.005;
-        spaceSkybox.rotation.y += 0.005;
-        spaceSkybox.rotation.z -= 0.008;
+        spaceSkybox.rotation.x += 0.05;
+        spaceSkybox.rotation.y += 0.05;
+        spaceSkybox.rotation.z -= 0.08;
+        starDust.rotation.x += 0.5;
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
@@ -413,7 +509,7 @@ var game = (function () {
     }
     // Setup main camera for the scene
     function setupCamera() {
-        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
+        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100000);
         camera.position.set(0, 10, 30);
         camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
