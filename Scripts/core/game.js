@@ -9,6 +9,7 @@ var CubeGeometry = THREE.CubeGeometry;
 var PlaneGeometry = THREE.PlaneGeometry;
 var SphereGeometry = THREE.SphereGeometry;
 var CylinderGeometry = THREE.CylinderGeometry;
+var CircleGeometry = THREE.CircleGeometry;
 var Geometry = THREE.Geometry;
 var AxisHelper = THREE.AxisHelper;
 var LambertMaterial = THREE.MeshLambertMaterial;
@@ -61,6 +62,16 @@ var game = (function () {
     var ship;
     var shipTexture;
     var shipTextureNormal;
+    var shipPitGeometry;
+    var shipPitPhysicsMaterial;
+    var shipPitMaterial;
+    var shipPit;
+    var shipPitTexture;
+    var shipPitTextureNormal;
+    var wingGeometry;
+    var wingMaterial;
+    var wingLeft;
+    var wingRight;
     var sphere;
     var sunMaterial;
     var sunAtmoMaterial;
@@ -127,7 +138,7 @@ var game = (function () {
         }
         // Scene changes for Physijs
         scene.name = "Main";
-        scene.fog = new THREE.Fog(0xffe6ff, 0, 750);
+        scene.fog = new THREE.Fog(0xffe6ff, 0, 1000);
         scene.setGravity(new THREE.Vector3(0, -10, 0));
         scene.addEventListener('update', function () {
             scene.simulate(undefined, 2);
@@ -159,7 +170,7 @@ var game = (function () {
         groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xffffff }), 0.4, 0);
         groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
         ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
-        ground.position.set(0, -150, 0);
+        ground.position.set(0, -100, 0);
         ground.receiveShadow = false;
         ground.visible = false;
         ground.name = "Ground";
@@ -207,6 +218,36 @@ var game = (function () {
         ship.rotation.z = -55;
         ship.receiveShadow = true;
         ship.name = "SpaceShip";
+        //ship Cockpit
+        shipPitTexture = new THREE.TextureLoader().load('../../Assets/images/shipHull.jpg');
+        shipPitTexture.wrapS = THREE.RepeatWrapping;
+        shipPitTexture.wrapT = THREE.RepeatWrapping;
+        shipPitTexture.repeat.set(4, 4);
+        shipPitTextureNormal = new THREE.TextureLoader().load('../../Assets/images/shipHullNormal.png');
+        shipPitTextureNormal.wrapS = THREE.RepeatWrapping;
+        shipPitTextureNormal.wrapT = THREE.RepeatWrapping;
+        shipPitTextureNormal.repeat.set(4, 4);
+        shipPitMaterial = new PhongMaterial();
+        shipPitMaterial.map = shipPitTexture;
+        shipPitMaterial.bumpMap = shipPitTextureNormal;
+        shipPitMaterial.bumpScale = 0.2;
+        shipPitGeometry = new CylinderGeometry(1, 9, 12, 10);
+        shipPitPhysicsMaterial = Physijs.createMaterial(shipPitMaterial, 1, 0);
+        shipPit = new Physijs.CylinderMesh(shipPitGeometry, shipPitMaterial, 0);
+        shipPit.position.set(0, 20.5, 0);
+        shipPit.rotation.y = 42;
+        shipPit.receiveShadow = true;
+        ship.add(shipPit);
+        //Ship wings
+        wingGeometry = new CircleGeometry(14, 0, 0, 2.1);
+        wingMaterial = new LambertMaterial({ map: shipTexture });
+        wingRight = new THREE.Mesh(wingGeometry, wingMaterial);
+        wingRight.position.set(5, -15, 0);
+        ship.add(wingRight);
+        wingLeft = new THREE.Mesh(wingGeometry, wingMaterial);
+        wingLeft.position.set(-6, -15, 2);
+        wingLeft.rotation.z = 45;
+        ship.add(wingLeft);
         scene.add(ship);
         console.log("Added Spaceship to scene");
         //Add a Sphere (sun)
@@ -248,12 +289,13 @@ var game = (function () {
         starDustMaterial.bumpScale = 0.2;
         starDustGeometry = new SphereGeometry(1, 3, 3);
         starDustPhysicsMaterial = Physijs.createMaterial(starDustMaterial, 1, 0);
-        starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
+        /*starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
         starDust.position.set(10, 5, -25);
         starDust.receiveShadow = true;
         starDust.name = "StarDust";
         scene.add(starDust);
-        console.log("Added StarDust to scene");
+        console.log("Added StarDust to scene");*/
+        setInterval(spawnStarDust, 5000);
         //Asteroid object
         asteroidTexture = new THREE.TextureLoader().load('../../Assets/images/asteroid.jpg');
         asteroidTexture.wrapS = THREE.RepeatWrapping;
@@ -281,6 +323,7 @@ var game = (function () {
         asteroid1 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
         asteroid1.position.set(0, -5, -25);
         asteroid1.scale.set(0.5, 0.5, 0.5);
+        asteroid1.name = "Asteroid";
         scene.add(asteroid1);
         var asteroid2 = asteroid.clone();
         asteroid2 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
@@ -338,7 +381,6 @@ var game = (function () {
                 isGrounded = true;
             }
             if (event.name === "StarDust") {
-                scene.remove(starDust);
                 score += 1;
                 console.log("player collected points" + score);
             }
@@ -348,6 +390,7 @@ var game = (function () {
                 keyboardControls.enabled = false;
                 mouseControls.enabled = false;
                 gameOver.style.display = '';
+                blocker.style.display = 'none';
             }
             if (event.name === "Sphere") {
                 console.log("player hit the sphere");
@@ -436,10 +479,10 @@ var game = (function () {
     function gameLoop() {
         stats.update();
         checkControls();
+        starDustTimeout();
         spaceSkybox.rotation.x += 0.05;
         spaceSkybox.rotation.y += 0.05;
         spaceSkybox.rotation.z -= 0.08;
-        starDust.rotation.x += 0.5;
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
@@ -497,6 +540,32 @@ var game = (function () {
         var cameraPitch = camera.rotation.x + mouseControls.pitch;
         //Constrain the Cmaera Pitch
         camera.rotation.x = THREE.Math.clamp(cameraPitch, nadir, zenith);
+    }
+    function spawnStarDust() {
+        starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
+        starDust.addEventListener('collision', function () {
+            scene.remove(this);
+        });
+        starDust.position.set((Math.random() * 60) - 30, (Math.random() * 10) - 10, (Math.random() * -30) - 5);
+        starDust.receiveShadow = true;
+        starDust.rotation.set((Math.random() * 60) - 30, (Math.random() * 10) - 10, (Math.random() * 25) - 25);
+        starDust.name = "StarDust";
+        scene.add(starDust);
+        console.log("added stardust");
+    }
+    function starDustTimeout() {
+        var starDustArray = scene.children;
+        var starDustAmt = 0;
+        var lastObject = starDustArray[starDustArray.length - 1];
+        for (var i in starDustArray) {
+            if (scene.children[i].name === "StarDust") {
+                starDustAmt++;
+            }
+            if (starDustAmt > 5) {
+                scene.remove(lastObject);
+                starDustAmt = 0;
+            }
+        }
     }
     // Setup default renderer
     function setupRenderer() {
