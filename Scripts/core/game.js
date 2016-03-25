@@ -10,6 +10,7 @@ var PlaneGeometry = THREE.PlaneGeometry;
 var SphereGeometry = THREE.SphereGeometry;
 var CylinderGeometry = THREE.CylinderGeometry;
 var CircleGeometry = THREE.CircleGeometry;
+var TorusGeometry = THREE.TorusGeometry;
 var Geometry = THREE.Geometry;
 var AxisHelper = THREE.AxisHelper;
 var LambertMaterial = THREE.MeshLambertMaterial;
@@ -49,9 +50,9 @@ var game = (function () {
     var stats;
     var blocker;
     var instructions;
-    var outputScore;
     var gameOver;
     var spotLight;
+    var ambientLight;
     var groundGeometry;
     var groundPhysicsMaterial;
     var groundMaterial;
@@ -76,6 +77,16 @@ var game = (function () {
     var sunMaterial;
     var sunAtmoMaterial;
     var sunTexture;
+    var gasGiantGeometry;
+    var gasGiantMaterial;
+    var gasGiant;
+    var gasGiantTexture;
+    var gasGiantTextureNormal;
+    var beltRing;
+    var beltRingGeometry;
+    var beltRingMaterial;
+    var beltRingTexture;
+    var beltRingTextureNormal;
     var starDustGeometry;
     var starDustPhysicsMaterial;
     var starDustMaterial;
@@ -105,13 +116,56 @@ var game = (function () {
     var directionLine;
     var spaceSkybox;
     var score = 0;
+    var deathDistance = 0;
+    var oxygenLevels = 50;
+    var remainingOxygen = 0;
+    var assest;
+    var canvas;
+    var stage;
+    var textScoreGeometry;
+    var textScoreMaterial;
+    var textScore;
+    var manifest = [
+        { id: "thrust", src: "../../Assets/audio/thrusters.wav" },
+        { id: "bloop", src: "../../Assets/audio/bloop.mp3" }
+    ];
+    function preload() {
+        assets = new createjs.LoadQueue();
+        assets.installPlugin(createjs.Sound);
+        assets.on('complete', init, this);
+        assets.loadManifest(manifest);
+    }
+    function setupCanvas() {
+        canvas = document.getElementById("canvas");
+        canvas.setAttribute("width", (config.Screen.WIDTH.toString()));
+        canvas.setAttribute("height", (config.Screen.HEIGHT * 0.05).toString());
+        canvas.style.backgroundColor = "#000000";
+        stage = new createjs.Stage(canvas);
+    }
+    function setupScoreboard() {
+        oxygenLabel = new createjs.Text("OXYGEN LEVELS: " + remainingOxygen, "20px Consolas", "#ffffff");
+        oxygenLabel.x = config.Screen.WIDTH * 0.45;
+        oxygenLabel.y = (config.Screen.HEIGHT * 0.1) * 0.20;
+        stage.addChild(oxygenLabel);
+        console.log("Added lives label to stage");
+        //Add Score Label
+        scoreLabel = new createjs.Text("SCORE: " + score, "20px Consolas", "#ffffff");
+        scoreLabel.x = config.Screen.WIDTH * 0.9;
+        scoreLabel.y = (config.Screen.HEIGHT * 0.1) * 0.20;
+        stage.addChild(scoreLabel);
+        console.log("Added score label to stage");
+        stage.update();
+    }
     function init() {
         // Create to HTMLElements
         blocker = document.getElementById("blocker");
         instructions = document.getElementById("instructions");
         gameOver = document.getElementById("gameOver");
-        outputScore = document.getElementById("score");
         gameOver.style.display = 'none';
+        //setup createjs canvas and stage
+        setupCanvas();
+        //Set up Scoreboard
+        setupScoreboard();
         //check to see if pointerlock is supported
         havePointerLock = 'pointerLockElement' in document ||
             'mozPointerLockElement' in document ||
@@ -147,30 +201,12 @@ var game = (function () {
         clock = new Clock();
         setupRenderer(); // setup the default renderer
         setupCamera(); // setup the camera
-        // Spot Light
-        spotLight = new SpotLight(0xffffff);
-        spotLight.position.set(-50, 50, 50);
-        spotLight.castShadow = true;
-        spotLight.intensity = 1;
-        spotLight.lookAt(new Vector3(0, 0, 0));
-        spotLight.shadowCameraNear = 2;
-        spotLight.shadowCameraFar = 200;
-        spotLight.shadowCameraLeft = -5;
-        spotLight.shadowCameraRight = 5;
-        spotLight.shadowCameraTop = 5;
-        spotLight.shadowCameraBottom = -5;
-        spotLight.shadowMapWidth = 2048;
-        spotLight.shadowMapHeight = 2048;
-        spotLight.shadowDarkness = 0.5;
-        spotLight.name = "Spot Light";
-        scene.add(spotLight);
-        console.log("Added spotLight to scene");
         //DEATH GROUND
         groundGeometry = new BoxGeometry(100000, 1, 100000);
         groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xffffff }), 0.4, 0);
         groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
         ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
-        ground.position.set(0, -100, 0);
+        ground.position.set(0, -73, 0);
         ground.receiveShadow = false;
         ground.visible = false;
         ground.name = "Ground";
@@ -197,6 +233,9 @@ var game = (function () {
         spaceSkybox = new THREE.Mesh(new THREE.CubeGeometry(100000, 100000, 100000, null, true), skyboxMat);
         // add it to the scene
         scene.add(spaceSkybox);
+        // Add an AmbientLight to the scene
+        ambientLight = new AmbientLight(0x0c0c0c);
+        scene.add(ambientLight);
         // Spaceship object
         shipTexture = new THREE.TextureLoader().load('../../Assets/images/shipHull.jpg');
         shipTexture.wrapS = THREE.RepeatWrapping;
@@ -248,46 +287,108 @@ var game = (function () {
         wingLeft.position.set(-6, -15, 2);
         wingLeft.rotation.z = 45;
         ship.add(wingLeft);
+        //Show Score
+        /*textScoreGeometry = new TextGeometry( score.toString(), {
+                    font: 'Arial',
+                    size: 80,
+                    height: 20,
+                    curveSegments: 2
+                });
+        textScoreMaterial = new PhongMaterial({color: 0xffffff});
+        textScore = new Mesh(textScoreGeometry, textScoreMaterial);
+        scene.add(textScore);*/
         scene.add(ship);
         console.log("Added Spaceship to scene");
         //Add a Sphere (sun)
-        sun = new SphereGeometry(30, 50, 50);
-        sunMaterial = new LambertMaterial({ color: 0xff4dff, emissive: 0xffccff });
+        sun = new SphereGeometry(10, 25, 25);
+        sunMaterial = new LambertMaterial({ color: 0xff4dff, map: new THREE.TextureLoader().load("../../Assets/images/sun.jpg") });
         sun = new Mesh(sun, sunMaterial);
         sun.castShadow = true;
-        sun.position.set(-80, 70, 150);
-        //Add Outer Gas to Sun
-        /*        atmo = new SphereGeometry(5, 50, 50);
-                sunTexture = new THREE.TextureLoader().load( "../../Assets/images/shipHull.jpg" );
-                sunTexture.wrapS = THREE.RepeatWrapping;
-                sunTexture.wrapT = THREE.RepeatWrapping;
-                sunTexture.repeat.set(4,4);
-                sunAtmo = new LambertMaterial();
-                sunAtmo.transparent = true;
-                sunAtmo.opacity = 0.2;
-                sunAtmo.map = sunTexture;
-                sunAtmo = new Mesh(atmo, sunAtmoMaterial);
-                scene.add(sunAtmo);*/
+        sun.position.set(-70, 30, -140);
         //Add Light to the Sun
-        pointLight = new PointLight(0xffccff, 2, 200);
-        pointLight.position.set(0, 0, 0);
+        pointLight = new PointLight(0xffc61a, 1, 100);
+        pointLight.position.set(-30, 25, -80);
+        pointLight.intensity = 10;
         pointLight.castShadow = true;
-        sun.add(pointLight);
+        scene.add(pointLight);
+        // Spot Light
+        spotLight = new SpotLight(0xffdf80);
+        spotLight.position.set(-80, 70, 200);
+        spotLight.castShadow = true;
+        spotLight.intensity = 1;
+        spotLight.lookAt(new Vector3(0, 0, 0));
+        spotLight.shadowCameraNear = 2;
+        spotLight.shadowCameraFar = 200;
+        spotLight.shadowCameraLeft = -5;
+        spotLight.shadowCameraRight = 5;
+        spotLight.shadowCameraTop = 5;
+        spotLight.shadowCameraBottom = -5;
+        spotLight.shadowMapWidth = 2048;
+        spotLight.shadowMapHeight = 2048;
+        spotLight.shadowDarkness = 0.5;
+        spotLight.name = "Spot Light";
+        scene.add(spotLight);
         scene.add(sun);
+        //Gas Giant object
+        gasGiantTexture = new THREE.TextureLoader().load('../../Assets/images/gasPlanet.jpg');
+        gasGiantTexture.wrapS = THREE.RepeatWrapping;
+        gasGiantTexture.wrapT = THREE.RepeatWrapping;
+        gasGiantTexture.repeat.set(4, 4);
+        gasGiantTextureNormal = new THREE.TextureLoader().load('../../Assets/images/gasPlanetNormal.png');
+        gasGiantTextureNormal.wrapS = THREE.RepeatWrapping;
+        gasGiantTextureNormal.wrapT = THREE.RepeatWrapping;
+        gasGiantTextureNormal.repeat.set(4, 4);
+        gasGiantMaterial = new PhongMaterial();
+        gasGiantMaterial.map = gasGiantTexture;
+        gasGiantMaterial.bumpMap = gasGiantTextureNormal;
+        gasGiantMaterial.bumpScale = 0.2;
+        gasGiantGeometry = new SphereGeometry(80, 50, 50);
+        gasGiant = new Mesh(gasGiantGeometry, gasGiantMaterial);
+        gasGiant.position.set(100, -80, -400);
+        gasGiant.receiveShadow = true;
+        gasGiant.rotation.set(0.2, -0.5, 0.5);
+        gasGiant.name = "Gas Giant";
+        beltRingTexture = new THREE.TextureLoader().load("../../Assets/images/asteroidBelt.png");
+        beltRingTexture.wrapS = THREE.RepeatWrapping;
+        beltRingTexture.wrapT = THREE.RepeatWrapping;
+        beltRingTexture.repeat.set(4, 1);
+        beltRingTextureNormal = new THREE.TextureLoader().load('../../Assets/images/asteroidBeltNormal.png');
+        beltRingTextureNormal.wrapS = THREE.RepeatWrapping;
+        beltRingTextureNormal.wrapT = THREE.RepeatWrapping;
+        beltRingTextureNormal.repeat.set(4, 1);
+        beltRingMaterial = new PhongMaterial();
+        beltRingMaterial.map = beltRingTexture;
+        beltRingMaterial.bumpMap = beltRingTextureNormal;
+        beltRingMaterial.bumpScale = 0.2;
+        beltRingMaterial.transparent = true;
+        beltRingGeometry = new TorusGeometry(100, 15, 2, 30);
+        beltRing = new Mesh(beltRingGeometry, beltRingMaterial);
+        beltRing.castShadow = false;
+        beltRing.rotation.set(-1.2, 0, 0);
+        gasGiant.add(beltRing);
+        //Add Light to the gas giant
+        gasPointLight = new PointLight(0xdd99ff, 0, 500);
+        gasPointLight.position.set(50, -50, -320);
+        gasPointLight.intensity = 0.5;
+        gasPointLight.castShadow = false;
+        scene.add(gasPointLight);
+        scene.add(gasGiant);
         //StarDust object
-        starDustTexture = new THREE.TextureLoader().load('../../Assets/images/gas.jpg');
+        starDustTexture = new THREE.TextureLoader().load('../../Assets/images/cartoonStars.jpg');
         starDustTexture.wrapS = THREE.RepeatWrapping;
         starDustTexture.wrapT = THREE.RepeatWrapping;
         starDustTexture.repeat.set(1, 1);
-        starDustTextureNormal = new THREE.TextureLoader().load('../../Assets/images/gasNormalMap.png');
+        starDustTextureNormal = new THREE.TextureLoader().load('../../Assets/images/cartoonStars.png');
         starDustTextureNormal.wrapS = THREE.RepeatWrapping;
         starDustTextureNormal.wrapT = THREE.RepeatWrapping;
         starDustTextureNormal.repeat.set(1, 1);
         starDustMaterial = new PhongMaterial();
         starDustMaterial.map = starDustTexture;
         starDustMaterial.bumpMap = starDustTextureNormal;
+        starDustMaterial.shininess = 100;
+        starDustMaterial.shading = THREE.FlatShading;
         starDustMaterial.bumpScale = 0.2;
-        starDustGeometry = new SphereGeometry(1, 3, 3);
+        starDustGeometry = new SphereGeometry(1.5, 3, 2);
         starDustPhysicsMaterial = Physijs.createMaterial(starDustMaterial, 1, 0);
         /*starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
         starDust.position.set(10, 5, -25);
@@ -317,7 +418,6 @@ var game = (function () {
         asteroid.receiveShadow = true;
         asteroid.name = "Asteroid";
         scene.add(asteroid);
-        //clone doesn't retain propeties? wut?
         //Duping asteroids 
         var asteroid1 = asteroid.clone();
         asteroid1 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
@@ -341,7 +441,7 @@ var game = (function () {
         scene.add(asteroid3);
         var asteroid4 = asteroid.clone();
         asteroid4 = new Physijs.SphereMesh(asteroidGeometry, asteroidMaterial, 0);
-        asteroid4.scale.set(0.4, 0.3, 0.5);
+        //asteroid4.scale.set(0.4, 0.3, 0.5);
         asteroid4.rotation.z -= 20;
         asteroid4.position.set(-30, 0, -30);
         asteroid4.name = "Asteroid";
@@ -365,16 +465,19 @@ var game = (function () {
         asteroid7.name = "Asteroid";
         scene.add(asteroid7);
         // Player Object
-        playerGeometry = new BoxGeometry(2, 4, 2);
-        playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.8, 0);
-        player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
+        playerGeometry = new BoxGeometry(1, 2, 1);
+        playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 1, 2);
+        player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1.5);
         player.position.set(2, 1, 0);
-        player.rotation.y += 7;
+        player.rotation.set(0, 0, 0);
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
         scene.add(player);
         console.log("Added Player to Scene");
+        //create parent child relationship with camera and player
+        player.add(camera);
+        camera.position.set(0, 1, 0);
         player.addEventListener('collision', function (event) {
             if (event.name === "SpaceShip" || event.name === "Asteroid") {
                 console.log("player hit the ship/asteroid");
@@ -383,12 +486,11 @@ var game = (function () {
             if (event.name === "StarDust") {
                 score += 1;
                 console.log("player collected points" + score);
+                createjs.Sound.stop();
+                createjs.Sound.play("bloop");
             }
             if (event.name === "Ground") {
                 console.log("Game Over");
-                outputScore.innerHTML = score;
-                keyboardControls.enabled = false;
-                mouseControls.enabled = false;
                 gameOver.style.display = '';
                 blocker.style.display = 'none';
             }
@@ -396,6 +498,8 @@ var game = (function () {
                 console.log("player hit the sphere");
             }
         });
+        deathDistance = Math.abs(Math.round(player.position.y - (ship.position.y + 10)));
+        oxygenLevels = oxygenLevels + deathDistance;
         // Add DirectionLine
         /*        directionLineMaterial = new LineBasicMaterial({ color: 0xffff00 });
                 directionLineGeometry = new Geometry();
@@ -404,9 +508,6 @@ var game = (function () {
                 directionLine = new Line(directionLineGeometry, directionLineMaterial);
                 player.add(directionLine);
                 console.log("Added DirectionLine to the Player");*/
-        //create parent child relationship with camera and player
-        player.add(camera);
-        camera.position.set(0, 1, 0);
         /*        //Sphere Object
                 sphereGeometry = new SphereGeometry(2);
                 sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
@@ -418,9 +519,9 @@ var game = (function () {
                 scene.add(sphere);
                 console.log("Adding Sphere to Scene");*/
         // add controls
-        gui = new GUI();
+        /*gui = new GUI();
         control = new Control();
-        addControl(control);
+        addControl(control);*/
         // Add framerate stats
         addStatsObject();
         console.log("Added Stats to scene...");
@@ -462,6 +563,12 @@ var game = (function () {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        canvas.style.width = "100%";
+        oxygenLabel.x = config.Screen.WIDTH * 0.45;
+        oxygenLabel.y = (config.Screen.HEIGHT * 0.1) * 0.20;
+        scoreLabel.x = config.Screen.WIDTH * 0.9;
+        scoreLabel.y = (config.Screen.HEIGHT * 0.1) * 0.20;
+        stage.update();
     }
     function addControl(controlObject) {
         /* ENTER CODE for the GUI CONTROL HERE */
@@ -478,15 +585,34 @@ var game = (function () {
     // Setup main game loop
     function gameLoop() {
         stats.update();
+        stage.update();
         checkControls();
+        checkDeathDistance();
         starDustTimeout();
         spaceSkybox.rotation.x += 0.05;
         spaceSkybox.rotation.y += 0.05;
         spaceSkybox.rotation.z -= 0.08;
+        beltRing.rotation.z += 0.0025;
+        gasGiant.rotation.y += 0.00025;
+        sun.rotation.z += 0.0025;
+        scoreLabel.text = "SCORE: " + score;
+        oxygenLabel.text = "OXYGEN LEVELS: " + remainingOxygen;
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
         renderer.render(scene, camera);
+    }
+    function checkDeathDistance() {
+        deathDistance = Math.abs(Math.round(player.position.y - (ship.position.y + 10)));
+        remainingOxygen = oxygenLevels - deathDistance;
+        if (remainingOxygen > 50) {
+            remainingOxygen = 50;
+        }
+        if (remainingOxygen <= 0) {
+            remainingOxygen = 0;
+            gameOver.style.display = '';
+            blocker.style.display = 'none';
+        }
     }
     function checkControls() {
         velocity = new Vector3();
@@ -495,28 +621,31 @@ var game = (function () {
             var delta = (time - prevTime) / 1000;
             var direction = new Vector3(0, 0, 0);
             if (keyboardControls.moveForward) {
-                console.log("Moving Forward");
-                velocity.z -= 2000.0 * delta;
+                velocity.z -= 500.0 * delta;
             }
             if (keyboardControls.moveLeft) {
-                console.log("Moving left");
-                velocity.x -= 2000.0 * delta;
+                velocity.x -= 500.0 * delta;
             }
             if (keyboardControls.moveBackward) {
-                console.log("Moving Backward");
-                velocity.z += 2000.0 * delta;
+                velocity.z += 500.0 * delta;
             }
             if (keyboardControls.moveRight) {
-                console.log("Moving Right");
-                velocity.x += 2000.0 * delta;
+                velocity.x += 500.0 * delta;
+            }
+            if (keyboardControls.restart) {
+                restartGame();
             }
             if (isGrounded) {
                 if (keyboardControls.jump) {
+                    velocity.y += 2000.0 * delta;
+                    createjs.Sound.play("thrust");
                     console.log("Jumping");
-                    velocity.y += 4000.0 * delta;
-                    if (player.position.y > 5) {
+                    if (player.position.y > 10) {
                         isGrounded = false;
                     }
+                }
+                else {
+                    createjs.Sound.stop();
                 }
             }
             player.setDamping(0.7, 0.1);
@@ -538,17 +667,27 @@ var game = (function () {
         var zenith = THREE.Math.degToRad(90);
         var nadir = THREE.Math.degToRad(-90);
         var cameraPitch = camera.rotation.x + mouseControls.pitch;
-        //Constrain the Cmaera Pitch
+        //Constrain the Camera Pitch
         camera.rotation.x = THREE.Math.clamp(cameraPitch, nadir, zenith);
+    }
+    function restartGame() {
+        score = 0;
+        scene.remove(player);
+        player.position.set(2, 1, 0);
+        player.rotation.set(0, 0, 0);
+        scene.add(player);
+        player.setAngularVelocity(new Vector3(0, 0, 0));
+        gameOver.style.display = 'none';
+        blocker.style.display = 'none';
     }
     function spawnStarDust() {
         starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
         starDust.addEventListener('collision', function () {
             scene.remove(this);
         });
-        starDust.position.set((Math.random() * 60) - 30, (Math.random() * 10) - 10, (Math.random() * -30) - 5);
+        starDust.position.set((Math.random() * 50) - 30, (Math.random() * 15) - 5, (Math.random() * -30) - 5);
         starDust.receiveShadow = true;
-        starDust.rotation.set((Math.random() * 60) - 30, (Math.random() * 10) - 10, (Math.random() * 25) - 25);
+        starDust.rotation.set((Math.random() * 50) - 30, (Math.random() * 10) - 10, (Math.random() * 25) - 25);
         starDust.name = "StarDust";
         scene.add(starDust);
         console.log("added stardust");
@@ -583,7 +722,7 @@ var game = (function () {
         camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
     }
-    window.onload = init;
+    window.onload = preload;
     return {
         scene: scene
     };

@@ -12,7 +12,7 @@ var objects;
         }
         // PUBLIC METHODS +++++++++++++++++++++
         MouseControls.prototype.OnMouseMove = function (event) {
-            this.yaw = event.movementX * this.sensitivity * 5;
+            this.yaw = event.movementX * this.sensitivity * 2;
             this.pitch = -event.movementY * this.sensitivity * 0.1;
         };
         return MouseControls;

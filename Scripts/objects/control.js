@@ -4,7 +4,7 @@ var objects;
     // CONTROL CLASS ++++++++++++++++++++++++++++++++++++++++++
     var Control = (function () {
         // CONSTRUCTOR ++++++++++++++++++++++++++++++++++++++++
-        function Control() {
+        function Control(displayScore) {
         }
         return Control;
     }());

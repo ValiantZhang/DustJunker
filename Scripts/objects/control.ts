@@ -2,11 +2,10 @@
 
 module objects {
     // CONTROL CLASS ++++++++++++++++++++++++++++++++++++++++++
-    export class Control { 
+    export class Control {
         
         // CONSTRUCTOR ++++++++++++++++++++++++++++++++++++++++
-        constructor() {
-
+        constructor(displayScore: number) {
         }
         
         //PUBLIC METHODS +++++++++++++++++++++++++++++++++++++++

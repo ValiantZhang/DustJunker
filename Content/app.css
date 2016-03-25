@@ -8,6 +8,7 @@ body {
     margin: 0;
     overflow: hidden;
     font-family: arial;
+    position: fixed;
 }
 
 #blocker {
@@ -42,6 +43,13 @@ body {
     color: #ffffff;
     text-align: center;
     cursor: pointer;
+}
+
+
+
+#over {
+    font-size: 40px;
+    color: #ffff00;
 }
 
 #play {

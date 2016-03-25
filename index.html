@@ -12,18 +12,21 @@
     <div id="blocker">
         <div id="instructions">
             <span id="play">Click to Play</span>
-            <br> (W, A, S, D = Move, SPACE = Jump, MOUSE = Look around);
+            <br> (W, A, S, D = Move, SPACE = Jump, MOUSE = Look around)
             <br> Collect the purple, don't fall.
         </div>
     </div>
     
     <div id="gameOver">
         <div id="instructions">
-            <span id="play">Game Over</span>
+            <span id="over">Game Over</span>
             <br> You are lost in space
-            <br> Star Dust collected: <div id="score">0</div>
         </div>
     </div>
+    
+        <canvas id="canvas"></canvas>
+    </div>
+    
     <!-- JavaScript Section -->
     <script src="Scripts/lib/EaselJS/lib/easeljs-0.8.2.min.js"></script>
     <script src="Scripts/lib/TweenJS/lib/tweenjs-0.6.2.min.js"></script>
@@ -42,6 +45,7 @@
     <script src="Scripts/objects/control.js"></script>
     <script src="Scripts/objects/gameobject.js"></script>
     <script src="Scripts/core/game.js"></script>
+    
 </body>
 
 </html>

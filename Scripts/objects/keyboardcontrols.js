@@ -30,6 +30,9 @@ var objects;
                 case 32:
                     this.jump = true;
                     break;
+                case 82:
+                    this.restart = true;
+                    break;
             }
         };
         KeyboardControls.prototype.onKeyUp = function (event) {
@@ -52,6 +55,9 @@ var objects;
                     break;
                 case 32:
                     this.jump = false;
+                    break;
+                case 82:
+                    this.restart = false;
                     break;
             }
         };
