@@ -33,6 +33,9 @@ var objects;
                 case 82:
                     this.restart = true;
                     break;
+                case 81:
+                    this.revert = true;
+                    break;
             }
         };
         KeyboardControls.prototype.onKeyUp = function (event) {
@@ -58,6 +61,9 @@ var objects;
                     break;
                 case 82:
                     this.restart = false;
+                    break;
+                case 81:
+                    this.revert = false;
                     break;
             }
         };

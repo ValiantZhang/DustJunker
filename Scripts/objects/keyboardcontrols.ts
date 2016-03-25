@@ -8,6 +8,7 @@ module objects {
         public moveRight: boolean;
         public jump: boolean;
         public restart: boolean;
+        public revert: boolean;
         public enabled: boolean;
         // CONSTRUCTOR ++++++++++++++++++++++++++    
         constructor() {
@@ -42,6 +43,9 @@ module objects {
                 case 82:/*R Button*/
                     this.restart = true;
                     break;
+                case 81:/*Q Button*/
+                    this.revert = true;
+                    break;
             }
         }
 
@@ -68,6 +72,9 @@ module objects {
                     break;
                 case 82: /*R Button*/
                     this.restart = false;
+                    break;
+                case 81: /*Q Button*/
+                    this.revert = false;
                     break;
             }
         }

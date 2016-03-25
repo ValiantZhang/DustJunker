@@ -14,7 +14,6 @@ import CylinderGeometry = THREE.CylinderGeometry;
 import CircleGeometry = THREE.CircleGeometry;
 import TorusGeometry = THREE.TorusGeometry;
 import Geometry = THREE.Geometry;
-import TextGeometry = THREE.TextGeometry;
 import AxisHelper = THREE.AxisHelper;
 import LambertMaterial = THREE.MeshLambertMaterial;
 import MeshBasicMaterial = THREE.MeshBasicMaterial;
@@ -130,29 +129,25 @@ var game = (() => {
     var isGrounded: boolean;
     var velocity: Vector3 = new Vector3(0,0,0);
     var prevTime: number = 0;
-    var directionLineMaterial: LineBasicMaterial;
-    var directionLineGeometry: Geometry;
-    var directionLine: Line;
     
     var spaceSkybox;
     
     var score: number = 0;
     var deathDistance: number = 0;
-    var oxygenLevels: number = 50;
+    var oxygenLevels: number = 61;
     var remainingOxygen: number = 0;
+    var maxStarDust: number = 5;
+    
+    var shipPos: Vector3 = new Vector3(0,0,0);
+    var curPlayerPos: Vector3 = new Vector3(0,0,0);
     
     var assest: createjs.LoadQueue;
     var canvas: HTMLElement;
     var stage: createjs.Stage;
     
-    
-    var textScoreGeometry: TextGeometry;
-    var textScoreMaterial: MeshPhongMaterial;
-    var textScore: Mesh;
-    
     var manifest = [
         {id:"thrust", src:"../../Assets/audio/thrusters.wav"},
-        {id:"bloop", src:"../../Assets/audio/bloop.mp3"}
+        {id:"bloop", src:"../../Assets/audio/bloop.wav"}
         ];
     
     
@@ -357,24 +352,14 @@ var game = (() => {
         wingRight = new THREE.Mesh( wingGeometry, wingMaterial );
         wingRight.position.set(5, -15, 0);
         ship.add(wingRight);
+        
         wingLeft = new THREE.Mesh( wingGeometry, wingMaterial );
         wingLeft.position.set(-6, -15, 2);
         wingLeft.rotation.z = 45;
         ship.add(wingLeft);
         
-        //Show Score
-        /*textScoreGeometry = new TextGeometry( score.toString(), {
-					font: 'Arial',
-					size: 80,
-					height: 20,
-					curveSegments: 2
-				});
-        textScoreMaterial = new PhongMaterial({color: 0xffffff});
-        textScore = new Mesh(textScoreGeometry, textScoreMaterial);
-        scene.add(textScore);*/
-        
         scene.add(ship);
-        console.log("Added Spaceship to scene");
+        shipPos = new THREE.Vector3( ship.position.x, ship.position.y, ship.position.z );
         
         //Add a Sphere (sun)
         sun = new SphereGeometry(10, 25, 25);
@@ -402,8 +387,8 @@ var game = (() => {
         spotLight.shadowCameraRight = 5;
         spotLight.shadowCameraTop = 5;
         spotLight.shadowCameraBottom = -5;
-        spotLight.shadowMapWidth = 2048;
-        spotLight.shadowMapHeight = 2048;
+        //spotLight.shadowMapWidth = 2048;
+        //spotLight.shadowMapHeight = 2048;
         spotLight.shadowDarkness = 0.5;
         spotLight.name = "Spot Light";
         scene.add(spotLight);
@@ -426,14 +411,14 @@ var game = (() => {
         gasGiantMaterial.bumpMap = gasGiantTextureNormal;
         gasGiantMaterial.bumpScale = 0.2;
         
-        gasGiantGeometry = new SphereGeometry(80, 50, 50);
+        gasGiantGeometry = new SphereGeometry(80, 25, 25);
         gasGiant = new Mesh(gasGiantGeometry, gasGiantMaterial);
         gasGiant.position.set(100, -80 ,-400);
         gasGiant.receiveShadow = true;
         gasGiant.rotation.set(0.2, -0.5, 0.5);
         gasGiant.name = "Gas Giant";
         
-        
+        //Asteroid Belt for Gas Giant
         beltRingTexture = new THREE.TextureLoader().load( "../../Assets/images/asteroidBelt.png" );
         beltRingTexture.wrapS = THREE.RepeatWrapping;
         beltRingTexture.wrapT = THREE.RepeatWrapping;
@@ -463,7 +448,6 @@ var game = (() => {
         gasPointLight.castShadow = false;
         scene.add(gasPointLight);
         
-        
         scene.add(gasGiant);
         
         //StarDust object
@@ -486,12 +470,8 @@ var game = (() => {
         
         starDustGeometry = new SphereGeometry(1.5, 3, 2);
         starDustPhysicsMaterial = Physijs.createMaterial(starDustMaterial, 1, 0);
-        /*starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
-        starDust.position.set(10, 5, -25);
-        starDust.receiveShadow = true;
-        starDust.name = "StarDust";
-        scene.add(starDust);
-        console.log("Added StarDust to scene");*/
+
+        //Spawn collectable every 5sec
         setInterval(spawnStarDust, 5000);
         
         //Asteroid object
@@ -592,7 +572,6 @@ var game = (() => {
         
         player.addEventListener('collision', (event) => {
             if (event.name === "SpaceShip" || event.name === "Asteroid"){
-                console.log("player hit the ship/asteroid");
                 isGrounded = true;
             }
             if (event.name === "StarDust"){
@@ -606,42 +585,10 @@ var game = (() => {
                 gameOver.style.display = '';
                 blocker.style.display = 'none';
             }
-            if (event.name === "Sphere"){
-                console.log("player hit the sphere");
-            }
         });
-        
-        deathDistance = Math.abs(Math.round(player.position.y - (ship.position.y + 10)));
-        oxygenLevels = oxygenLevels + deathDistance;
-        
-        // Add DirectionLine
-/*        directionLineMaterial = new LineBasicMaterial({ color: 0xffff00 });
-        directionLineGeometry = new Geometry();
-        directionLineGeometry.vertices.push(new Vector3(0, 0, 0)); // line origin
-        directionLineGeometry.vertices.push(new Vector3(0, 0, -50)); // end of the line
-        directionLine = new Line(directionLineGeometry, directionLineMaterial);
-        player.add(directionLine);
-        console.log("Added DirectionLine to the Player");*/
-        
-/*        //Sphere Object
-        sphereGeometry = new SphereGeometry(2);
-        sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
-        sphere = new Physijs.SphereMesh(sphereGeometry, sphereMaterial, 1);
-        sphere.position.set(0, 60, 0);
-        sphere.receiveShadow = true;
-        sphere.castShadow = true;
-        sphere.name = "Sphere";
-        scene.add(sphere);
-        console.log("Adding Sphere to Scene");*/
-        
-        // add controls
-        /*gui = new GUI();
-        control = new Control();
-        addControl(control);*/
 
         // Add framerate stats
         addStatsObject();
-        console.log("Added Stats to scene...");
 
         document.body.appendChild(renderer.domElement);
         gameLoop(); // render the scene	
@@ -734,8 +681,11 @@ var game = (() => {
         renderer.render(scene, camera);
     }
     
+    //Check to see if the player should be dead
     function checkDeathDistance(): void {
-        deathDistance = Math.abs(Math.round(player.position.y - (ship.position.y + 10)));
+        curPlayerPos = new THREE.Vector3( player.position.x, player.position.y, player.position.z );
+        
+        deathDistance = Math.abs(Math.round(curPlayerPos.distanceTo(shipPos)));
         remainingOxygen = oxygenLevels - deathDistance;
         
         if (remainingOxygen > 50){
@@ -746,10 +696,12 @@ var game = (() => {
                 remainingOxygen = 0;
                 gameOver.style.display = '';
                 blocker.style.display = 'none';
+                enableMoveControls(false);
             }
         
     }
     
+    //Check keyboard/mouse controls
     function checkControls(): void{
         velocity = new Vector3();
 
@@ -777,17 +729,22 @@ var game = (() => {
                 if (isGrounded){
                     if (keyboardControls.jump) {
                         velocity.y += 2000.0 * delta;
-                        createjs.Sound.play("thrust");
-                        console.log("Jumping");
-                        
                         if (player.position.y > 10) {
                             isGrounded = false;
                         }
                     }
-                    
-                    else{
-                        createjs.Sound.stop();
-                    }
+                }
+                if (!keyboardControls.jump){
+                    createjs.Sound.stop("thrust");
+                }
+                
+                if (keyboardControls.revert){
+                        scene.remove(player);
+                        player.position.set(2, 1, 0);
+                        player.rotation.set(0, 0, 0);
+                        scene.add(player);
+                        player.setAngularVelocity(new Vector3(0, 0 , 0));
+                        oxygenLevels --;
                 }
 
                 
@@ -810,6 +767,16 @@ var game = (() => {
         }
     }
     
+    //Disable player movement only
+    function enableMoveControls(disabled: boolean): void{
+        keyboardControls.moveForward = disabled;
+        keyboardControls.moveLeft = disabled;
+        keyboardControls.moveRight = disabled;
+        keyboardControls.moveBackward = disabled;
+        keyboardControls.jump = disabled;
+        mouseControls.enabled = disabled;
+    }
+    
     function cameraLook(): void {
         var zenith: number = THREE.Math.degToRad(90);
         var nadir: number = THREE.Math.degToRad(-90);
@@ -822,8 +789,10 @@ var game = (() => {
         
     }
     
+    //restarting the game
     function restartGame(): void{
         score = 0;
+        oxygenLevels = 61;
         scene.remove(player);
         player.position.set(2, 1, 0);
         player.rotation.set(0, 0, 0);
@@ -833,6 +802,7 @@ var game = (() => {
         blocker.style.display = 'none';
     }
     
+    //Spawn Collectables
     function spawnStarDust(): void{
         starDust = new Physijs.SphereMesh(starDustGeometry, starDustMaterial, 0);
         starDust.addEventListener('collision', function(){
@@ -846,6 +816,7 @@ var game = (() => {
         console.log("added stardust");
     }
     
+    //Remove Collectable if it there is too much on screen
     function starDustTimeout(): void {
         var starDustArray: THREE.Object3D[] = scene.children;
         var starDustAmt: number = 0;
@@ -856,7 +827,7 @@ var game = (() => {
                 starDustAmt++;
             }
             
-            if (starDustAmt > 5) {
+            if (starDustAmt > maxStarDust) {
                 scene.remove(lastObject);
                 starDustAmt = 0;
             }
