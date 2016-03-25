@@ -147,7 +147,8 @@ var game = (() => {
     
     var manifest = [
         {id:"thrust", src:"../../Assets/audio/thrusters.wav"},
-        {id:"bloop", src:"../../Assets/audio/bloop.wav"}
+        {id:"bloop", src:"../../Assets/audio/bloop.wav"},
+        {id:"warp", src:"../../Assets/audio/warp.wav"}
         ];
     
     
@@ -577,7 +578,6 @@ var game = (() => {
             if (event.name === "StarDust"){
                 score += 1;
                 console.log("player collected points" + score);
-                createjs.Sound.stop();
                 createjs.Sound.play("bloop");
             }
             if (event.name === "Ground"){
@@ -729,6 +729,7 @@ var game = (() => {
                 if (isGrounded){
                     if (keyboardControls.jump) {
                         velocity.y += 2000.0 * delta;
+                        createjs.Sound.play("thrust");
                         if (player.position.y > 10) {
                             isGrounded = false;
                         }
@@ -739,6 +740,7 @@ var game = (() => {
                 }
                 
                 if (keyboardControls.revert){
+                        createjs.Sound.play("warp");
                         scene.remove(player);
                         player.position.set(2, 1, 0);
                         player.rotation.set(0, 0, 0);
